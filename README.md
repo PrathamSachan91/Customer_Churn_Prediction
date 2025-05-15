@@ -6,11 +6,12 @@ This project predicts whether a customer is likely to **churn** (i.e., leave a s
 
 ## 🚀 Features
 
-- Predict churn with probability scores
-- Identify key risk factors for churn
-- Generate actionable recommendations
-- Clean and modern UI with dark theme
-- Real-time inference using Flask backend
+- ✅ Predict churn with probability scores  
+- 🔎 Identify key risk factors for churn  
+- 💡 Generate actionable retention recommendations  
+- 📁 Upload CSV file and download updated results  
+- 🌙 Clean and modern UI with dark theme  
+- ⚙️ Real-time inference using Flask backend  
 
 ---
 
@@ -22,30 +23,50 @@ This project predicts whether a customer is likely to **churn** (i.e., leave a s
 
 ### Backend
 - Python (Flask)
-- scikit-learn (for ML model)
+- scikit-learn (ML model)
 - Pandas, NumPy (data processing)
 
 ---
 
 ## 🔍 Prediction Inputs
 
-| Field                | Description                            |
-|---------------------|----------------------------------------|
-| Age                 | Customer's age                         |
-| Gender              | Male / Female                          |
-| Support Calls       | Number of support calls made           |
-| Payment Delay       | Days since last payment was due        |
-| Total Spend         | Total amount spent by the customer     |
-| Last Interaction    | Days since last customer interaction   |
+| Field              | Description                                |
+|-------------------|--------------------------------------------|
+| Age               | Customer's age                             |
+| Gender            | Male / Female                              |
+| Support Calls     | Number of support calls made               |
+| Payment Delay     | Days since last payment was due            |
+| Total Spend       | Total amount spent by the customer         |
+| Last Interaction  | Days since last customer interaction       |
 
 ---
 
 ## 🧪 Output
 
-- **Prediction:** `Yes` or `No` for churn
-- **Probability Meter**: Visual meter of churn probability
-- **Risk Factors**: Tags of top contributing reasons
-- **Recommendations**: Customized tips to retain customer
+- **Prediction**: `Yes` or `No` for churn  
+- **Probability Meter**: Visual indicator of churn probability  
+- **Risk Factors**: Highlighted issues contributing to churn  
+- **Recommendations**: Tailored retention actions  
+- **📁 CSV Upload Support**: Upload a CSV and get back an annotated CSV with predictions, churn probabilities, risk tags, and recommendations
+
+---
+
+## 📂 CSV Upload Format
+
+### Required Input Columns:
+- `Age`  
+- `Gender`  
+- `Support Calls`  
+- `Payment Delay`  
+- `Total Spend`  
+- `Last Interaction`
+
+### Output CSV Includes:
+- Original input columns  
+- `Prediction` (`Yes` / `No`)  
+- `Churn Probability` (e.g., `78.4%`)  
+- `Risk Factors`  
+- `Recommended Actions`  
 
 ---
 
@@ -57,7 +78,3 @@ git clone https://github.com/PrathamSachan91/Customer_Churn_Prediction.git
 cd customer-churn-prediction
 churn_prediction\Scripts\activate
 python app.py    
-
-## Contributors
-1. Harsh Kumar
-2. Pratham Sachan
