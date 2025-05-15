@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Upload CSV - Churn Prediction</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      background-color: #0a0a0a;
+      color: #ffffff;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ffffff;
+      margin-bottom: 30px;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #121212;
+      padding: 30px;
+      max-width: 600px;
+      margin: 0 auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    input[type="file"] {
+      font-size: 1rem;
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 400px;
+      background-color: #121212;
+      cursor: pointer;
+      transition: border-color 0.3s ease;
+    }
+
+    input[type="file"]:hover {
+      border-color: #0066cc;
+    }
+
+    button {
+      padding: 12px 25px;
+      background-color: #0066cc;
+      color: white;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #004d99;
+    }
+
+    .result {
+      margin-top: 40px;
+      background: #121212;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .customer {
+      margin-bottom: 30px;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 15px;
+    }
+
+    .customer:last-child {
+      border-bottom: none;
+    }
+
+    .customer h3 {
+      margin-bottom: 10px;
+      color: #007acc;
+    }
+
+    .recommendation {
+      margin-top: 10px;
+      margin-left: 10px;
+      padding-left: 10px;
+      border-left: 3px solid #ddd;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 10px;
+    }
+
+    p {
+      margin: 5px 0;
+    }
+
+    em {
+      color: #555;
+    }
+
+    #download-btn {
+      display: none;
+      margin: 30px auto 0;
+      background-color: #28a745;
+    }
+
+    #download-btn:hover {
+      background-color: #1e7e34;
+    }
+
+    @media (max-width: 600px) {
+      form, .result {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Upload CSV for Customer Churn Prediction</h1>
+
+  <form id="upload-form">
+    <input type="file" id="csvFile" name="csv_file" accept=".csv" required />
+    <button type="submit">Upload and Predict</button>
+  </form>
+
+  <button id="download-btn">Download CSV with Predictions</button>
+
+  <div id="output" class="result"></div>
+
+  <script>
+    const form = document.getElementById('upload-form');
+    const outputDiv = document.getElementById('output');
+    const downloadBtn = document.getElementById('download-btn');
+
+    let latestResults = null;  // To store results for download
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const fileInput = document.getElementById('csvFile');
+      const formData = new FormData();
+      formData.append('csv_file', fileInput.files[0]);
+
+      outputDiv.innerHTML = 'Processing...';
+      downloadBtn.style.display = 'none';  // Hide download button until ready
+      latestResults = null;
+
+      try {
+        const response = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          outputDiv.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
+          return;
+        }
+
+        latestResults = data.results;  // Save for download
+
+        outputDiv.innerHTML = '';
+        data.results.forEach((res, index) => {
+          const html = `
+            <div class="customer">
+              <h3>Customer ${index + 1}</h3>
+              <p><strong>Prediction:</strong> ${res.prediction} (${res.probability})</p>
+              <p><strong>Risk Factors:</strong> ${res.risk_factors.join(', ') || 'None'}</p>
+              <p><strong>Action:</strong> ${res.recommendations.action}</p>
+              <p><strong>Message:</strong> ${res.recommendations.message}</p>
+              <div class="recommendation">
+                <h4>Recommendations:</h4>
+                <ul>
+                  ${res.recommendations.recommendations.map(rec => `
+                    <li>
+                      <strong>${rec.feature}</strong>: ${rec.description}<br/>
+                      <em>Why?</em> ${rec.rationale}
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+            </div>
+          `;
+          outputDiv.innerHTML += html;
+        });
+
+        downloadBtn.style.display = 'block'; // Show download button now
+
+      } catch (err) {
+        outputDiv.innerHTML = `<p style="color:red;">Request failed: ${err}</p>`;
+      }
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      if (!latestResults || latestResults.length === 0) return;
+
+      const csvContent = jsonToCsv(latestResults);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'predictions.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    function jsonToCsv(results) {
+      const originalHeaders = Object.keys(results[0].customer_data);
+
+      const newHeaders = [
+        "Prediction",
+        "Probability",
+        "Risk Factors",
+        "Action",
+        "Message",
+        "Recommendations"
+      ];
+
+      const headers = [...originalHeaders, ...newHeaders];
+
+      const rows = results.map(res => {
+        const originalValues = originalHeaders.map(h => res.customer_data[h]);
+
+        const recsText = res.recommendations.recommendations.map(r =>
+          `${r.feature}: ${r.description} (Why? ${r.rationale})`
+        ).join(" | ");
+
+        const newValues = [
+          res.prediction,
+          res.probability,
+          res.risk_factors.join("; ") || "None",
+          res.recommendations.action,
+          res.recommendations.message,
+          recsText
+        ];
+
+        const allValues = [...originalValues, ...newValues].map(field =>
+          `"${String(field).replace(/"/g, '""')}"`
+        );
+
+        return allValues.join(",");
+      });
+
+      return [headers.join(","), ...rows].join("\n");
+    }
+  </script>
+</body>
+</html>
