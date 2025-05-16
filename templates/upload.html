@@ -114,7 +114,7 @@
     }
 
     em {
-      color: #555;
+      color: #aaa;
     }
 
     #download-btn {
@@ -127,12 +127,27 @@
       background-color: #1e7e34;
     }
 
+    .chart-container {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+      margin-top: 40px;
+    }
+
+    .chart-container canvas {
+      max-width: 400px;
+      max-height: 400px;
+      width: 100%;
+    }
+
     @media (max-width: 600px) {
       form, .result {
         padding: 20px;
       }
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <h1>Upload CSV for Customer Churn Prediction</h1>
@@ -144,6 +159,11 @@
 
   <button id="download-btn">Download CSV with Predictions</button>
 
+  <div class="chart-container">
+    <canvas id="churnPieChart" width="400" height="300"></canvas>
+    <canvas id="riskBarChart" width="400" height="300"></canvas>
+  </div>
+
   <div id="output" class="result"></div>
 
   <script>
@@ -151,7 +171,7 @@
     const outputDiv = document.getElementById('output');
     const downloadBtn = document.getElementById('download-btn');
 
-    let latestResults = null;  // To store results for download
+    let latestResults = null;
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -161,7 +181,7 @@
       formData.append('csv_file', fileInput.files[0]);
 
       outputDiv.innerHTML = 'Processing...';
-      downloadBtn.style.display = 'none';  // Hide download button until ready
+      downloadBtn.style.display = 'none';
       latestResults = null;
 
       try {
@@ -177,7 +197,7 @@
           return;
         }
 
-        latestResults = data.results;  // Save for download
+        latestResults = data.results;
 
         outputDiv.innerHTML = '';
         data.results.forEach((res, index) => {
@@ -204,7 +224,8 @@
           outputDiv.innerHTML += html;
         });
 
-        downloadBtn.style.display = 'block'; // Show download button now
+        downloadBtn.style.display = 'block';
+        renderCharts(data.results);
 
       } catch (err) {
         outputDiv.innerHTML = `<p style="color:red;">Request failed: ${err}</p>`;
@@ -228,14 +249,9 @@
 
     function jsonToCsv(results) {
       const originalHeaders = Object.keys(results[0].customer_data);
-
       const newHeaders = [
-        "Prediction",
-        "Probability",
-        "Risk Factors",
-        "Action",
-        "Message",
-        "Recommendations"
+        "Prediction", "Probability", "Risk Factors",
+        "Action", "Message", "Recommendations"
       ];
 
       const headers = [...originalHeaders, ...newHeaders];
@@ -264,6 +280,82 @@
       });
 
       return [headers.join(","), ...rows].join("\n");
+    }
+
+    function renderCharts(results) {
+      const churnCounts = results.reduce((acc, res) => {
+        if (res.prediction.toLowerCase() === 'yes') acc.churn++;
+        else acc.nonChurn++;
+        return acc;
+      }, { churn: 0, nonChurn: 0 });
+
+      const churnPieCtx = document.getElementById('churnPieChart').getContext('2d');
+      new Chart(churnPieCtx, {
+        type: 'pie',
+        data: {
+          labels: ['Churn', 'Non-Churn'],
+          datasets: [{
+            data: [churnCounts.churn, churnCounts.nonChurn],
+            backgroundColor: ['#dc3545', '#28a745'],
+          }]
+        },
+        options: {
+          plugins: {
+            title: {
+              display: true,
+              text: 'Churn vs Non-Churn Customers',
+              color: '#fff',
+              font: { size: 16 }
+            },
+            legend: {
+              labels: { color: '#fff' }
+            }
+          }
+        }
+      });
+
+      const riskFactorMap = {};
+      results.forEach(res => {
+        res.risk_factors.forEach(factor => {
+          if (!riskFactorMap[factor]) riskFactorMap[factor] = 0;
+          riskFactorMap[factor]++;
+        });
+      });
+
+      const sortedFactors = Object.entries(riskFactorMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+      const riskBarCtx = document.getElementById('riskBarChart').getContext('2d');
+      new Chart(riskBarCtx, {
+        type: 'bar',
+        data: {
+          labels: sortedFactors.map(([factor]) => factor),
+          datasets: [{
+            label: 'Occurrences',
+            data: sortedFactors.map(([, count]) => count),
+            backgroundColor: '#007bff'
+          }]
+        },
+        options: {
+          plugins: {
+            title: {
+              display: true,
+              text: 'Top 5 Risk Factors',
+              color: '#fff',
+              font: { size: 16 }
+            },
+            legend: { labels: { color: '#fff' } }
+          },
+          scales: {
+            x: { ticks: { color: '#fff' } },
+            y: {
+              beginAtZero: true,
+              ticks: { color: '#fff' }
+            }
+          }
+        }
+      });
     }
   </script>
 </body>
