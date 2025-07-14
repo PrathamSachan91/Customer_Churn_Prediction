@@ -1,7 +1,7 @@
 # 📉 Customer Churn Prediction
 
 This project predicts whether a customer is likely to **churn** (i.e., leave a service or subscription) based on their demographic, support, and usage data. It uses a machine learning model served via Flask and features a modern, responsive frontend for input and visual output.
-
+Check it out: https://customer-churn-prediction-i270.onrender.com
 ---
 
 ## 🚀 Features
